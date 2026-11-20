@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in · Chatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#dde1ee; --text:#1d1d1f; --muted:#8a8f99; --pink:#e5186c;
+          --grad:linear-gradient(90deg,#ff8a1f,#e5186c); --ring:linear-gradient(45deg,#ff8a1f,#e5186c 60%,#c2149f); }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; background:var(--bg); color:var(--text);
+         font:15px/1.4 "Helvetica Neue",Arial,sans-serif; }
+  button, input { font:inherit; color:inherit; }
+  button { cursor:pointer; border:0; background:none; }
+  :focus-visible { outline:2px solid var(--pink); outline-offset:2px; }
+
+  .card { width:min(940px,100%); min-height:560px; display:grid; grid-template-columns:1fr 1fr; background:#fff; border-radius:36px;
+          overflow:hidden; box-shadow:0 20px 60px rgba(70,80,140,.18); }
+  .brand { background:var(--ring); color:#fff; padding:44px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+  .brand::before, .brand::after { content:""; position:absolute; border-radius:50%; background:#fff; opacity:.14; }
+  .brand::before { width:340px; height:340px; right:-90px; bottom:-80px; }
+  .brand::after { width:180px; height:180px; left:-50px; top:46%; }
+  .logo { display:flex; align-items:center; gap:10px; font:36px "Grand Hotel",cursive; }
+  .logo i { width:32px; height:32px; border-radius:10px; border:2.5px solid #fff; display:block; position:relative; }
+  .logo i::after { content:""; position:absolute; inset:6px; border:2.5px solid #fff; border-radius:50%; }
+  .brand h1 { font-size:34px; line-height:1.15; margin:0; font-weight:600; max-width:12ch; position:relative; }
+  .brand p { margin:12px 0 0; opacity:.9; max-width:30ch; position:relative; }
+
+  .panel { padding:48px 44px; display:flex; flex-direction:column; justify-content:center; }
+  .tabs { display:flex; background:#f0f1f6; border-radius:14px; padding:4px; margin-bottom:26px; }
+  .tabs button { flex:1; padding:9px; border-radius:10px; color:var(--muted); font-weight:600; }
+  .tabs button.on { background:#fff; color:var(--text); box-shadow:0 2px 6px rgba(0,0,0,.08); }
+  h2 { margin:0 0 4px; font-size:26px; font-weight:600; }
+  .sub { margin:0 0 20px; color:var(--muted); }
+  form { display:grid; gap:12px; }
+  label { font-size:13px; color:var(--muted); display:grid; gap:5px; }
+  input { width:100%; border:1px solid #dcdfe6; border-radius:12px; padding:12px 14px; background:#fff; }
+  .pw { position:relative; }
+  .pw input { padding-right:64px; }
+  .pw button { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--muted); padding:4px 6px; }
+  .err { color:#c4123f; font-size:13px; margin:0; min-height:18px; }
+  .go { height:48px; border-radius:30px; color:#fff; font-weight:600; font-size:16px; background:var(--grad); box-shadow:0 8px 20px rgba(229,24,108,.3); }
+  .go:disabled { opacity:.6; cursor:wait; }
+  [hidden] { display:none !important; }
+
+  @media (max-width:800px) {
+    .card { grid-template-columns:1fr; min-height:0; border-radius:28px; }
+    .brand { padding:28px; } .brand h1 { font-size:24px; max-width:none; } .brand p { display:none; }
+    .panel { padding:28px; }
+  }
+</style>
+</head>
+<body>
+<main class="card">
+  <section class="brand">
+    <div class="logo"><i></i>Chatter</div>
+    <div>
+      <h1>Share moments with people you care about.</h1>
+      <p>Post photos, add stories and follow friends.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" class="on" data-mode="login">Log in</button>
+      <button type="button" role="tab" data-mode="register">Create account</button>
+    </div>
+    <h2 id="title">Welcome back</h2>
+    <p class="sub" id="sub">Log in to see your feed.</p>
+
+    <form id="form">
+      <label data-reg hidden>Full name<input name="name" autocomplete="name"></label>
+      <label>Username<input name="username" required autocomplete="username" autocapitalize="none"></label>
+      <label>Password
+        <span class="pw"><input name="password" id="password" type="password" required autocomplete="current-password" placeholder="At least 6 characters"><button type="button" id="toggle">Show</button></span>
+      </label>
+      <p class="err" id="err" role="alert"></p>
+      <button class="go" id="go">Log in</button>
+    </form>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const csrf = () => (document.cookie.split('; ').find(c => c.startsWith('csrftoken=')) || '').split('=')[1] || '';
+let mode = 'login';
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => { const on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  const reg = m === 'register';
+  $('[data-reg]').hidden = !reg;
+  $('#title').textContent = reg ? 'Create your account' : 'Welcome back';
+  $('#sub').textContent = reg ? 'It only takes a moment.' : 'Log in to see your feed.';
+  $('#go').textContent = reg ? 'Create account' : 'Log in';
+  $('#password').autocomplete = reg ? 'new-password' : 'current-password';
+  $('#err').textContent = '';
+  history.replaceState(null, '', reg ? '#register' : '#');
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('#toggle').onclick = () => {
+  const show = $('#password').type === 'password';
+  $('#password').type = show ? 'text' : 'password';
+  $('#toggle').textContent = show ? 'Hide' : 'Show';
+};
+
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  $('#err').textContent = '';
+  $('#go').disabled = true;
+  try {
+    const r = await fetch(mode === 'login' ? '/api/login' : '/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: JSON.stringify(Object.fromEntries(new FormData(e.target)))
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    location.href = '/';
+  } catch (err) {
+    $('#err').textContent = err.message.startsWith('Unexpected') ? 'Something went wrong. Reload the page and try again.' : err.message;
+    $('#go').disabled = false;
+  }
+};
+
+if (location.hash === '#register') setMode('register');
+</script>
+</body>
+</html>

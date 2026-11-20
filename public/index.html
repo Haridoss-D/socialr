@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#dde1ee; --panel:#f5f5f5; --text:#1d1d1f; --muted:#8a8f99; --pink:#e5186c;
+          --grad:linear-gradient(90deg,#ff8a1f,#e5186c); --ring:linear-gradient(45deg,#ff8a1f,#e5186c 60%,#c2149f); }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--text); font:15px/1.4 "Helvetica Neue",Arial,sans-serif; }
+  button { font:inherit; color:inherit; cursor:pointer; border:0; background:none; }
+  :focus-visible { outline:2px solid var(--pink); outline-offset:2px; }
+  svg { width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+  .shell { max-width:1440px; margin:0 auto; height:calc(100vh - 48px); min-height:560px; background:#fff; border-radius:36px;
+           padding:24px; display:grid; grid-template-columns:320px 1fr; gap:28px; box-shadow:0 20px 60px rgba(70,80,140,.18); }
+  .side { overflow-y:auto; padding:0 10px; }
+  .main { background:var(--panel); border-radius:32px; padding:22px 30px 10px; overflow-y:auto; }
+
+  /* avatars */
+  .av { border-radius:50%; object-fit:cover; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; flex:none; }
+
+  /* sidebar */
+  .logo { display:flex; align-items:center; gap:10px; font:34px "Grand Hotel",cursive; margin:4px 0 26px; }
+  .logo i { width:30px; height:30px; border-radius:9px; background:var(--ring); display:block; position:relative; }
+  .logo i::after { content:""; position:absolute; inset:7px; border:2.5px solid #fff; border-radius:50%; }
+  .me { text-align:center; }
+  .me .av { margin:0 auto 12px; }
+  .me h2 { margin:0; font-size:17px; }
+  .me .handle { color:var(--muted); font-size:13px; }
+  .stats { display:flex; margin:22px 0; }
+  .stats div { flex:1; text-align:center; }
+  .stats div + div { border-left:1px solid #222; }
+  .stats b { display:block; font-size:17px; }
+  .bio b { display:block; margin-bottom:2px; font-size:14px; }
+  .bio p { margin:0; }
+  nav { margin-top:30px; display:grid; gap:6px; }
+  nav button { display:flex; align-items:center; gap:18px; padding:10px 6px; font-size:17px; border-radius:12px; text-align:left; }
+  nav button span { width:26px; height:26px; }
+  nav button.on { font-weight:600; }
+  nav button:hover { background:#f3f4f8; }
+
+  /* topbar */
+  .top { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .search { flex:0 1 410px; display:flex; align-items:center; gap:10px; background:#fff; border-radius:30px; padding:0 18px; height:46px; }
+  .search span { width:22px; height:22px; color:var(--muted); }
+  .search input { border:0; outline:0; flex:1; font:inherit; background:transparent; }
+  .top .sp { flex:1; }
+  .ic { width:32px; height:32px; padding:3px; border-radius:50%; position:relative; }
+  .ic:hover { color:var(--pink); }
+  .dot::after { content:""; position:absolute; top:3px; right:5px; width:8px; height:8px; border-radius:50%; background:var(--pink); }
+  .create { display:flex; align-items:center; gap:8px; height:46px; padding:0 26px; border-radius:30px; color:#fff; font-weight:600; font-size:16px;
+            background:var(--grad); box-shadow:0 8px 20px rgba(229,24,108,.3); }
+  .create span { width:18px; height:18px; }
+  h3 { font-size:26px; font-weight:500; margin:6px 0 16px; }
+
+  /* stories */
+  .stories { display:flex; gap:22px; overflow-x:auto; padding:4px 2px 12px; margin-bottom:12px; }
+  .story { width:96px; flex:none; text-align:center; font-size:15px; position:relative; }
+  .ring { width:96px; height:96px; padding:3px; border-radius:50%; background:var(--ring); }
+  .ring.none { background:#d5d8df; }
+  .ring .in { width:100%; height:100%; padding:3px; background:#fff; border-radius:50%; }
+  .story p { margin:6px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .unused { position:absolute; left:50%; transform:translateX(-50%); top:76px; background:#d1117a; color:#fff; font-size:10px; padding:1px 9px; border-radius:3px; }
+  .plus { position:absolute; right:4px; top:62px; width:26px; height:26px; padding:5px; border-radius:50%; background:#1e8fe1; color:#fff; border:2px solid #fff; }
+
+  /* feed */
+  .feed { columns:3 280px; column-gap:22px; padding-bottom:12px; }
+  .post { break-inside:avoid; background:#fff; border-radius:22px; padding:12px; margin-bottom:22px; box-shadow:0 6px 24px rgba(40,50,90,.07); }
+  .post header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .who { flex:1; min-width:0; line-height:1.25; }
+  .who b { display:block; font-size:14px; font-weight:500; }
+  .who span { color:var(--muted); font-size:12px; }
+  .media { display:block; width:100%; border-radius:14px; max-height:440px; object-fit:cover; }
+  .textpost { aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; padding:22px; text-align:center; color:#fff; font-size:20px; font-weight:600; }
+  .actions { display:flex; gap:6px; margin:10px 0 4px; }
+  .actions .save { margin-left:auto; }
+  .ic.on svg { fill:currentColor; }
+  .ic.on[data-a=like] { color:var(--pink); }
+  .likes, .cap { margin:0 0 4px 4px; font-size:13px; }
+  .cm { display:none; margin:8px 4px 2px; border-top:1px solid #eee; padding-top:8px; font-size:13px; }
+  .post.open .cm { display:block; }
+  .cm p { margin:0 0 4px; }
+  .row { display:flex; gap:6px; margin-top:6px; }
+  .row input, dialog input, dialog textarea { flex:1; width:100%; font:inherit; border:1px solid #dcdfe6; border-radius:10px; padding:8px 10px; }
+  .btn { background:var(--grad); color:#fff; border-radius:10px; padding:8px 16px; font-weight:600; }
+  .empty { color:var(--muted); text-align:center; padding:40px 0; column-span:all; }
+
+  /* dialogs + toast */
+  dialog { border:0; border-radius:22px; padding:24px; width:min(440px,92vw); }
+  dialog::backdrop { background:rgba(20,24,40,.5); }
+  dialog h4 { margin:0 0 14px; font-size:20px; }
+  dialog label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+  dialog .acts .x { padding:8px 14px; }
+  #viewer { background:#111; color:#fff; padding:14px; }
+  #viewer img { width:100%; max-height:70vh; object-fit:contain; border-radius:12px; display:block; margin-top:10px; cursor:pointer; }
+  #toast { position:fixed; bottom:34px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 18px; border-radius:24px; opacity:0; pointer-events:none; transition:opacity .2s; }
+  #toast.show { opacity:1; }
+
+  @media (max-width:1100px) { .feed { columns:2 260px; } }
+  @media (max-width:900px) {
+    body { padding:0; } .shell { display:block; height:auto; border-radius:0; padding:16px; }
+    .side { overflow:visible; padding:0; margin-bottom:20px; } .main { padding:18px; overflow:visible; }
+    nav { grid-template-columns:repeat(2,1fr); } .top { flex-wrap:wrap; } .search { flex:1 1 100%; }
+  }
+  @media (max-width:640px) { .feed { columns:1; } }
+  [hidden] { display:none !important; }
+  .follow { font-size:12px; font-weight:600; color:var(--pink); padding:4px 10px; border-radius:14px; border:1px solid var(--pink); }
+  .follow.on { color:var(--muted); border-color:#d5d8df; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></symbol>
+  <symbol id="i-reels" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M3 8h18M9 3l3 5M15 3l3 5"/><path d="M10 12l5 3-5 3z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9c0 3 1.5 5.5 3.8 7L6 22l3.4-1.7A9 9 0 1 0 12 3z"/><path d="M8 13l3-3 2 2 3-3"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+</svg>
+
+<div class="shell" id="app">
+  <aside class="side">
+    <div class="logo"><i></i>Chatter</div>
+    <div class="me" id="me"></div>
+    <nav>
+      <button data-nav="new" class="on"><span><svg><use href="#i-home"/></svg></span>Feed</button>
+      <button data-nav="top"><span><svg><use href="#i-search"/></svg></span>Explore</button>
+      <button data-nav="reels"><span><svg><use href="#i-reels"/></svg></span>Reels</button>
+      <button data-nav="settings"><span><svg><use href="#i-settings"/></svg></span>Settings</button>
+      <button data-nav="logout"><span><svg><use href="#i-logout"/></svg></span>Log out</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <label class="search"><span><svg><use href="#i-search"/></svg></span><input id="q" placeholder="Search" aria-label="Search posts"></label>
+      <div class="sp"></div>
+      <button class="ic dot" data-soon title="Notifications"><svg><use href="#i-bell"/></svg></button>
+      <button class="ic" data-soon title="Messages"><svg><use href="#i-chat"/></svg></button>
+      <button class="create" id="new-post"><span><svg><use href="#i-plus"/></svg></span>Create a post</button>
+    </div>
+
+    <h3>Stories</h3>
+    <div class="stories" id="stories"></div>
+
+    <h3 id="feed-title">Feed</h3>
+    <div class="feed" id="feed"></div>
+  </main>
+</div>
+
+<input type="file" id="story-file" accept="image/*" hidden>
+
+<dialog id="post-dlg">
+  <form id="post-form">
+    <h4>Create a post</h4>
+    <label>Photo</label><input type="file" name="image" accept="image/*">
+    <label>Caption</label><textarea name="caption" rows="3" placeholder="Write a caption"></textarea>
+    <label>Location</label><input name="location" placeholder="City, Country">
+    <div class="acts"><button type="button" class="x" data-close>Cancel</button><button class="btn">Share</button></div>
+  </form>
+</dialog>
+
+<dialog id="profile-dlg">
+  <form id="profile-form">
+    <h4>Edit profile</h4>
+    <label>Name</label><input name="name" required>
+    <label>Bio</label><input name="bio" maxlength="200">
+    <label>Profile photo</label><input type="file" name="avatar" accept="image/*">
+    <div class="acts"><button type="button" class="x" data-close>Cancel</button><button class="btn">Save changes</button></div>
+  </form>
+</dialog>
+
+<dialog id="viewer"><b id="v-name"></b><img id="v-img" alt="Story"></dialog>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'K' : n;
+const hue = s => [...String(s)].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 360;
+const icon = n => `<svg><use href="#i-${n}"/></svg>`;
+const grad = name => `linear-gradient(135deg,hsl(${hue(name)} 70% 58%),hsl(${(hue(name) + 55) % 360} 65% 42%))`;
+const avatar = (p, size) => {
+  const st = `width:${size}px;height:${size}px;font-size:${size * .4}px`;
+  return p.avatar ? `<img class="av" style="${st}" src="${p.avatar}" alt="">`
+                  : `<div class="av" style="${st};background:${grad(p.name)}">${esc(p.name[0] || '?')}</div>`;
+};
+const csrf = () => (document.cookie.split('; ').find(c => c.startsWith('csrftoken=')) || '').split('=')[1] || '';
+const api = async (url, method = 'GET', body) => {
+  const fd = body instanceof FormData;
+  const r = await fetch(url, {
+    method,
+    headers: { ...(body && !fd ? { 'Content-Type': 'application/json' } : {}), 'X-CSRFToken': csrf() },
+    body: body && !fd ? JSON.stringify(body) : body
+  });
+  if (r.status === 401) { location.href = '/login'; throw new Error('login required'); }
+  return r.status === 204 ? null : r.json();
+};
+let toastTimer;
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); };
+const state = { sort: 'new', q: '', stories: [], open: new Set(), me: null };
+
+/* ---------- profile ---------- */
+function renderMe(p) {
+  state.me = p;
+  $('#me').innerHTML = `
+    ${avatar(p, 112)}
+    <h2>${esc(p.name)}</h2><div class="handle">@${esc(p.handle)}</div>
+    <div class="stats"><div><b>${fmt(p.posts)}</b>Posts</div><div><b>${fmt(p.followers)}</b>Followers</div><div><b>${fmt(p.following)}</b>Following</div></div>
+    <div class="bio" style="text-align:left"><b>${esc(p.name)}</b><p>${esc(p.bio)}</p></div>`;
+}
+
+/* ---------- stories ---------- */
+function renderStories() {
+  $('#stories').innerHTML = state.stories.map((s, i) => `
+    <div class="story" data-i="${i}">
+      <div class="ring${s.images.length ? '' : ' none'}"><div class="in">${avatar(s.profile, 84)}</div></div>
+      ${s.isMe ? `<button class="plus" data-add title="Add to your story">${icon('plus')}</button>` : ''}
+      <p>${s.isMe ? 'Your story' : esc(s.profile.name.split(' ')[0])}</p>
+    </div>`).join('');
+}
+$('#stories').onclick = e => {
+  if (e.target.closest('[data-add]')) return $('#story-file').click();
+  const el = e.target.closest('.story'); if (!el) return;
+  const s = state.stories[el.dataset.i];
+  if (!s.images.length) return toast('Tap + to add your first story');
+  let k = 0; const show = () => { $('#v-name').textContent = s.profile.name; $('#v-img').src = s.images[k]; };
+  show(); $('#viewer').showModal();
+  $('#v-img').onclick = () => { k++; if (k >= s.images.length) $('#viewer').close(); else show(); };
+};
+$('#viewer').onclick = e => { if (e.target.id === 'viewer') e.target.close(); };
+$('#story-file').onchange = async e => {
+  if (!e.target.files[0]) return;
+  const fd = new FormData(); fd.append('image', e.target.files[0]);
+  await api('/api/stories', 'POST', fd); e.target.value = '';
+  loadStories(); toast('Story added');
+};
+
+/* ---------- feed ---------- */
+const postHTML = p => `
+  <article class="post${state.open.has(p.id) ? ' open' : ''}" data-id="${p.id}">
+    <header>${avatar(p.profile, 38)}
+      <div class="who"><b>${esc(p.profile.name)}</b><span>${esc(p.location)}</span></div>
+      ${p.isMine ? `<button class="ic" data-a="del" title="Delete post">${icon('dots')}</button>`
+                 : `<button class="follow${p.profile.isFollowing ? ' on' : ''}" data-a="follow" data-pid="${p.profile.id}">${p.profile.isFollowing ? 'Following' : 'Follow'}</button>`}
+    </header>
+    ${p.image ? `<img class="media" src="${p.image}" alt="" loading="lazy">`
+              : `<div class="media textpost" style="background:${grad(p.profile.name)}">${esc(p.caption)}</div>`}
+    <div class="actions">
+      <button class="ic${p.liked ? ' on' : ''}" data-a="like" title="Like">${icon('heart')}</button>
+      <button class="ic" data-a="cm" title="Comments">${icon('comment')}</button>
+      <button class="ic" data-a="share" title="Copy link">${icon('send')}</button>
+      <button class="ic save${p.saved ? ' on' : ''}" data-a="save" title="Save">${icon('bookmark')}</button>
+    </div>
+    <p class="likes"><b>${p.likes}</b> likes</p>
+    ${p.image && p.caption ? `<p class="cap">${esc(p.caption)}</p>` : ''}
+    <div class="cm">
+      ${p.comments.map(c => `<p><b>${esc(c.name)}</b> ${esc(c.text)}</p>`).join('')}
+      <div class="row"><input placeholder="Add a comment" aria-label="Comment"><button class="btn" data-a="send">Reply</button></div>
+    </div>
+  </article>`;
+
+async function loadFeed() {
+  const posts = await api(`/api/posts?sort=${state.sort}&q=${encodeURIComponent(state.q)}`);
+  const empty = state.q ? 'No posts match your search.'
+    : state.sort === 'new' ? 'Your feed is empty. Create a post, or open Explore and follow people.'
+    : 'Nothing to explore yet.';
+  $('#feed').innerHTML = posts.length ? posts.map(postHTML).join('') : `<div class="empty">${empty}</div>`;
+}
+async function loadStories() { state.stories = await api('/api/stories'); renderStories(); }
+async function loadMe() { renderMe(await api('/api/me')); }
+
+$('#feed').onclick = async e => {
+  const btn = e.target.closest('[data-a]'); if (!btn) return;
+  const card = btn.closest('.post'), id = +card.dataset.id, a = btn.dataset.a;
+  if (a === 'cm') { card.classList.toggle('open'); state.open.has(id) ? state.open.delete(id) : state.open.add(id); return; }
+  if (a === 'share') { navigator.clipboard?.writeText(location.origin + '/#post-' + id); return toast('Link copied'); }
+  if (a === 'follow') { await api(`/api/profiles/${btn.dataset.pid}/follow`, 'POST'); loadMe(); loadFeed(); return; }
+  if (a === 'like' || a === 'save') await api(`/api/posts/${id}/${a}`, 'POST');
+  if (a === 'del') { if (!confirm('Delete this post?')) return; await api(`/api/posts/${id}`, 'DELETE'); loadMe(); }
+  if (a === 'send') {
+    const input = card.querySelector('input'); if (!input.value.trim()) return;
+    await api(`/api/posts/${id}/comments`, 'POST', { text: input.value }); state.open.add(id);
+  }
+  loadFeed();
+};
+$('#feed').onkeydown = e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.closest('.post').querySelector('[data-a=send]').click(); };
+
+/* ---------- navigation + search ---------- */
+document.querySelector('nav').onclick = async e => {
+  const b = e.target.closest('[data-nav]'); if (!b) return;
+  const k = b.dataset.nav;
+  if (k === 'logout') { await api('/api/logout', 'POST'); return (location.href = '/login'); }
+  if (k === 'reels') return toast('Reels aren’t part of this version');
+  if (k === 'settings') { const f = $('#profile-form'); f.name.value = state.me.name; f.bio.value = state.me.bio; return $('#profile-dlg').showModal(); }
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  state.sort = k; $('#feed-title').textContent = k === 'top' ? 'Explore' : 'Feed'; loadFeed();
+};
+let st; $('#q').oninput = e => { clearTimeout(st); st = setTimeout(() => { state.q = e.target.value.trim(); loadFeed(); }, 250); };
+document.querySelectorAll('[data-soon]').forEach(b => b.onclick = () => toast('Not part of this version'));
+
+/* ---------- dialogs ---------- */
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+$('#new-post').onclick = () => $('#post-dlg').showModal();
+$('#post-form').onsubmit = async e => {
+  e.preventDefault();
+  const r = await api('/api/posts', 'POST', new FormData(e.target));
+  if (r.error) return toast(r.error);
+  e.target.reset(); $('#post-dlg').close(); toast('Posted'); loadFeed(); loadMe();
+};
+$('#profile-form').onsubmit = async e => {
+  e.preventDefault();
+  await api('/api/me', 'POST', new FormData(e.target));
+  $('#profile-dlg').close(); toast('Profile updated'); loadMe(); loadStories(); loadFeed();
+};
+
+/* ---------- start ---------- */
+(async () => {
+  const r = await fetch('/api/me');
+  if (r.status === 401) return (location.href = '/login');
+  renderMe(await r.json()); loadStories(); loadFeed();
+})();
+</script>
+</body>
+</html>
